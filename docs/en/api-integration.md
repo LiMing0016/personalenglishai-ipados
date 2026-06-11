@@ -19,18 +19,21 @@ The Web client currently uses:
 - access token in `Authorization: Bearer <token>`
 - refresh token through httpOnly cookie
 
-The iPadOS client needs a confirmed mobile strategy:
+The iPadOS client has chosen a mobile-native auth contract:
 
-- Option A: support cookie-based refresh with `URLSession` cookie storage
-- Option B: add/confirm a JSON refresh-token flow suitable for native apps
+- Backend exposes mobile login/refresh/logout endpoints.
+- Login/refresh returns access token and refresh token in JSON.
+- iPadOS stores both tokens in Keychain.
+- Refresh sends the refresh token in JSON instead of relying on Web httpOnly cookies.
 
-Do not continue deep Phase 1 implementation until this is decided.
+See [Auth And Session Design](./auth-session-design) for the detailed Phase 1 design.
 
 ## First Endpoints
 
 ```text
-POST /api/v1/auth/login
-POST /api/v1/auth/refresh
+POST /api/v1/auth/mobile/login
+POST /api/v1/auth/mobile/refresh
+POST /api/v1/auth/mobile/logout
 GET  /api/users/me/profile
 
 GET  /api/assistant/conversations
@@ -43,6 +46,6 @@ POST /api/assistant/conversations/{id}/messages/run/stream
 ## Security Rules
 
 - Do not put OpenAI API keys in the iPad app.
-- Store access tokens in Keychain.
+- Store access and refresh tokens in Keychain.
 - Avoid logging tokens or secrets.
 - Route all AI calls through existing backend/orchestrator services.

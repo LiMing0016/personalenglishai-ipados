@@ -113,15 +113,17 @@ iPadOS 端直接请求 Spring Boot API，不请求 Web 前端。
 
 - 不把 `OPENAI_API_KEY` 放进 iPad App。
 - 所有 AI 能力都走现有后端或 Python orchestrator。
-- access token 存 Keychain。
+- access token 和 refresh token 都存 Keychain。
 - 请求自动携带 `Authorization: Bearer <token>`。
-- 401 时走 refresh 流程；如果现有 refresh 强依赖 httpOnly cookie，需要评估移动端兼容方案。
+- 401 时走移动端 refresh 流程，不把 Web 端 httpOnly cookie refresh 作为 iPadOS 长期方案。
+- iPadOS 长期认证方案采用 mobile-native auth contract，详细设计见 `docs/superpowers/specs/2026-06-12-ipados-mobile-auth-design.md`。
 
 第一批接口：
 
 ```text
-POST /api/v1/auth/login
-POST /api/v1/auth/refresh
+POST /api/v1/auth/mobile/login
+POST /api/v1/auth/mobile/refresh
+POST /api/v1/auth/mobile/logout
 GET  /api/users/me/profile
 
 GET  /api/assistant/conversations

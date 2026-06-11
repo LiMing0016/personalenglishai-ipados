@@ -19,18 +19,21 @@ Web 客户端当前使用：
 - access token 放在 `Authorization: Bearer <token>` 中
 - refresh token 通过 httpOnly cookie 携带
 
-iPadOS 客户端需要先确认移动端策略：
+iPadOS 客户端已选择 mobile-native auth contract：
 
-- 方案 A：使用 `URLSession` cookie storage 支持 cookie-based refresh
-- 方案 B：新增或确认适合原生 App 的 JSON refresh-token 流程
+- 后端提供 mobile login/refresh/logout 契约。
+- login/refresh 通过 JSON body 返回 access token 和 refresh token。
+- iPadOS 将 access token 和 refresh token 保存到 Keychain。
+- refresh 时通过 JSON body 提交 refresh token，不依赖 Web httpOnly cookie。
 
-在这个问题确认前，不要深入实现 Phase 1。
+登录与会话的详细设计见 [登录与会话设计](./auth-session-design)。
 
 ## 第一批接口
 
 ```text
-POST /api/v1/auth/login
-POST /api/v1/auth/refresh
+POST /api/v1/auth/mobile/login
+POST /api/v1/auth/mobile/refresh
+POST /api/v1/auth/mobile/logout
 GET  /api/users/me/profile
 
 GET  /api/assistant/conversations
@@ -43,6 +46,6 @@ POST /api/assistant/conversations/{id}/messages/run/stream
 ## 安全规则
 
 - 不要把 OpenAI API Key 放进 iPad App。
-- access token 存入 Keychain。
+- access token 和 refresh token 存入 Keychain。
 - 不要记录 token 或 secret。
 - 所有 AI 调用都走现有后端/orchestrator 服务。

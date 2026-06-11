@@ -35,6 +35,7 @@ export default defineConfig({
             text: '设计',
             items: [
               { text: '架构', link: '/architecture' },
+              { text: '登录与会话设计', link: '/auth-session-design' },
               { text: 'API 接入', link: '/api-integration' },
               { text: 'iPadOS 详细规划', link: '/ipados-development-plan' }
             ]
@@ -72,6 +73,7 @@ export default defineConfig({
             text: 'Design',
             items: [
               { text: 'Architecture', link: '/en/architecture' },
+              { text: 'Auth And Session Design', link: '/en/auth-session-design' },
               { text: 'API Integration', link: '/en/api-integration' },
               { text: 'iPadOS Development Plan', link: '/en/ipados-development-plan' }
             ]

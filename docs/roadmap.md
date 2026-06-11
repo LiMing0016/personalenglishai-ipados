@@ -28,10 +28,10 @@
 
 范围：
 
-- 确认移动端 refresh token 策略
+- 采用 mobile-native auth contract
+- access token 和 refresh token 存入 Keychain
 - 实现 `AuthService`
 - 使用现有后端账号登录
-- access token 存入 Keychain
 - App 启动时恢复登录态
 - 获取 `/api/users/me/profile`
 

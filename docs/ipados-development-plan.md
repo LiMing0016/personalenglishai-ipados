@@ -60,7 +60,7 @@ personalenglishai-ipados/
 - 状态: `@State`, `@Binding`, `@Environment`, iOS 17+ 可用 `@Observable`
 - 异步: Swift Concurrency, `async/await`, `.task`
 - 网络: `URLSession`
-- 鉴权存储: Keychain 保存 access token，必要时处理 refresh cookie
+- 鉴权存储: Keychain 保存 access token 和 refresh token，iPadOS 长期方案不依赖 Web httpOnly refresh cookie
 - 本地草稿: SwiftData 或文件/JSON，第一版可以先用轻量本地存储
 
 不建议第一版使用：
@@ -229,23 +229,23 @@ Web 端当前 API 模式：
 
 - Web 通过 `/api` 代理到 Spring Boot。
 - 请求携带 `Authorization: Bearer <token>`。
-- refresh token 通过 httpOnly cookie 静默续签。
+- Web 端 refresh token 通过 httpOnly cookie 静默续签。
 
 iPadOS 端需要适配：
 
 - `APIClient` 配置真实 API base URL，例如 `https://api.your-domain.com/api`。
-- access token 保存到 Keychain。
+- access token 和 refresh token 保存到 Keychain。
 - 每个请求自动加 `Authorization`。
-- 401 时调用 `/v1/auth/refresh`，如果后端 refresh 强依赖 cookie，则需要确认移动端 cookie 策略。
-- 如果移动端不适合使用 cookie refresh，后端最好新增移动端 refresh token JSON 返回/刷新机制。
+- 401 时调用 mobile refresh。
+- iPadOS 已选择 mobile-native auth contract：login/refresh 通过 JSON 返回 access token 和 refresh token，不依赖 Web cookie refresh。
 
 第一批需要接入的接口：
 
 ```text
 Auth
-POST /api/v1/auth/login
-POST /api/v1/auth/refresh
-POST /api/v1/auth/logout
+POST /api/v1/auth/mobile/login
+POST /api/v1/auth/mobile/refresh
+POST /api/v1/auth/mobile/logout
 
 User
 GET   /api/users/me/profile
@@ -429,7 +429,7 @@ Phase 0 + Phase 1 + Phase 2
 - 所有 AI 调用走现有后端或 Python orchestrator。
 - SwiftUI View 不直接拼接复杂业务逻辑。
 - 网络请求集中在 service 中。
-- access token 放 Keychain，不放明文文件。
+- access token 和 refresh token 放 Keychain，不放明文文件。
 - 不要把 Web 的页面结构逐字搬到 iPadOS。
 - 优先做原生 iPad 体验，而不是 WebView 套壳。
 - 复杂页面先保证功能闭环，再优化视觉和交互。
@@ -438,8 +438,8 @@ Phase 0 + Phase 1 + Phase 2
 
 下一步进入登录与用户会话接入：
 
-1. 确认后端移动端登录/refresh token 策略。
+1. 按 mobile-native auth contract 实现 iPadOS client 侧登录与会话。
 2. 实现真实 `AuthService`。
-3. 登录成功后写入 Keychain。
+3. 登录成功后写入 access token 和 refresh token 到 Keychain。
 4. 启动时恢复登录态。
 5. 获取 `/api/users/me/profile` 并进入应用工作台。
