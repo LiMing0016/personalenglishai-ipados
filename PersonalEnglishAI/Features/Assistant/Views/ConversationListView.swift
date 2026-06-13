@@ -24,14 +24,14 @@ struct ConversationListView: View {
                 .accessibilityIdentifier("assistant.conversation.\(conversation.id)")
             }
         }
-        .navigationTitle("Assistant")
+        .navigationTitle("AI 助手")
         .toolbar {
             Button {
                 selectedConversationID = conversations.first?.id
             } label: {
                 Image(systemName: "square.and.pencil")
             }
-            .accessibilityLabel("New conversation")
+            .accessibilityLabel("新建对话")
             .accessibilityIdentifier("assistant.newConversation")
         }
         .onAppear {

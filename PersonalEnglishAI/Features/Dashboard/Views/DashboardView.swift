@@ -14,16 +14,16 @@ struct DashboardView: View {
             .frame(maxWidth: 920, alignment: .leading)
         }
         .background(Color.peaiBackground)
-        .navigationTitle("Home")
+        .navigationTitle("首页")
     }
 }
 
 private struct HeaderSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("Learning workspace")
+            Text("学习工作台")
                 .font(Typography.pageTitle)
-            Text("Start with a conversation, draft an essay, or review your recent progress.")
+            Text("从一次对话、一篇写作草稿，或最近的学习进度开始。")
                 .font(Typography.body)
                 .foregroundStyle(.secondary)
         }
@@ -67,12 +67,12 @@ private struct QuickActionTile: View {
 private struct TodayFocusSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            Text("Today")
+            Text("今日")
                 .font(Typography.sectionTitle)
             EmptyStateView(
                 systemImage: "sparkles",
-                title: "Ready when you are",
-                message: "Phase 0 uses mock content. Real learning data arrives after login and API integration."
+                title: "准备好了就开始",
+                message: "当前阶段使用示例内容。登录和 API 接入完成后，这里会展示真实学习数据。"
             )
             .frame(height: 260)
             .background(Color.peaiSurface, in: RoundedRectangle(cornerRadius: 8))
@@ -83,13 +83,13 @@ private struct TodayFocusSection: View {
 struct DashboardContextView: View {
     var body: some View {
         List {
-            Section("Workspace") {
-                Label("Overview", systemImage: "house")
-                Label("Recent activity", systemImage: "clock")
-                Label("Drafts", systemImage: "doc.text")
+            Section("工作台") {
+                Label("总览", systemImage: "house")
+                Label("最近活动", systemImage: "clock")
+                Label("草稿", systemImage: "doc.text")
             }
         }
-        .navigationTitle("Home")
+        .navigationTitle("首页")
     }
 }
 
@@ -102,20 +102,20 @@ private struct DashboardQuickAction: Identifiable {
     static let samples = [
         DashboardQuickAction(
             id: "assistant",
-            title: "Ask assistant",
-            subtitle: "Practice, explain, translate, and brainstorm.",
+            title: "问 AI 助手",
+            subtitle: "练口语、讲语法、做翻译，也可以一起整理想法。",
             systemImage: "bubble.left.and.bubble.right"
         ),
         DashboardQuickAction(
             id: "writing",
-            title: "Write essay",
-            subtitle: "Draft and prepare for AI scoring.",
+            title: "写一篇作文",
+            subtitle: "先完成草稿，后续接入 AI 评分与反馈。",
             systemImage: "pencil.and.scribble"
         ),
         DashboardQuickAction(
             id: "profile",
-            title: "Track profile",
-            subtitle: "Review progress and subscription status.",
+            title: "查看学习档案",
+            subtitle: "追踪能力变化、学习进度和账户状态。",
             systemImage: "chart.line.uptrend.xyaxis"
         )
     ]

@@ -15,8 +15,8 @@ struct EmptyStateView_Previews: PreviewProvider {
     static var previews: some View {
         EmptyStateView(
             systemImage: "tray",
-            title: "Nothing here yet",
-            message: "Create your first item to get started."
+            title: "这里还没有内容",
+            message: "创建第一条内容后，就可以从这里开始。"
         )
     }
 }

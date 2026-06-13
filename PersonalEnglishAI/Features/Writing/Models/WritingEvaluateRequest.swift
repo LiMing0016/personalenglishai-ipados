@@ -15,9 +15,9 @@ enum WritingMode: String, Codable, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .free:
-            "Free writing"
+            "自由写作"
         case .exam:
-            "Exam writing"
+            "考试写作"
         }
     }
 }

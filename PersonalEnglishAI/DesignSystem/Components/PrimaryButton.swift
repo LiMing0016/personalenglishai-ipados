@@ -17,7 +17,7 @@ struct PrimaryButton: View {
 
 struct PrimaryButton_Previews: PreviewProvider {
     static var previews: some View {
-        PrimaryButton(title: "Continue", systemImage: "arrow.right", action: {})
+        PrimaryButton(title: "继续", systemImage: "arrow.right", action: {})
             .padding()
     }
 }

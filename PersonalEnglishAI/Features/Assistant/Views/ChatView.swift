@@ -22,7 +22,7 @@ struct ChatView: View {
                 .padding(Spacing.md)
                 .background(.bar)
         }
-        .navigationTitle("Conversation")
+        .navigationTitle("对话")
         .accessibilityIdentifier("assistant.chat.\(conversationID)")
     }
 

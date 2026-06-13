@@ -18,7 +18,8 @@ struct APIClient {
         }
 
         guard (200..<300).contains(httpResponse.statusCode) else {
-            throw APIError.requestFailed(statusCode: httpResponse.statusCode)
+            let message = try? JSONDecoder.api.decode(APIErrorResponse.self, from: data).message
+            throw APIError.requestFailed(statusCode: httpResponse.statusCode, message: message)
         }
 
         do {
@@ -60,6 +61,10 @@ struct APIClient {
 
         return request
     }
+}
+
+private struct APIErrorResponse: Decodable {
+    let message: String?
 }
 
 private struct AnyEncodable: Encodable {

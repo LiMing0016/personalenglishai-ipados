@@ -12,7 +12,7 @@ struct ErrorStateView: View {
             Text(message)
         } actions: {
             if let retry {
-                Button("Retry", action: retry)
+                Button("重试", action: retry)
                     .accessibilityIdentifier("error.retry")
             }
         }
@@ -22,6 +22,6 @@ struct ErrorStateView: View {
 
 struct ErrorStateView_Previews: PreviewProvider {
     static var previews: some View {
-        ErrorStateView(title: "Something went wrong", message: "Please try again.", retry: {})
+        ErrorStateView(title: "出错了", message: "请稍后再试。", retry: {})
     }
 }

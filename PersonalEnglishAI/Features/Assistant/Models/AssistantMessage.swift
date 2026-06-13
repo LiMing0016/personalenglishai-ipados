@@ -14,12 +14,12 @@ struct AssistantMessage: Identifiable, Hashable {
         AssistantMessage(
             id: "message-1",
             role: .user,
-            content: "Help me improve this IELTS answer."
+            content: "帮我优化一下这段雅思口语回答。"
         ),
         AssistantMessage(
             id: "message-2",
             role: .assistant,
-            content: "Sure. Start with a clearer topic sentence, then add one specific example."
+            content: "可以。建议先用更清晰的主题句开头，然后补充一个具体例子，让回答更完整。"
         )
     ]
 }

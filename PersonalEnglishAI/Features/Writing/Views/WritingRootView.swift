@@ -4,7 +4,7 @@ struct WritingRootView: View {
     let draftID: String?
     @State private var mode: WritingMode = .free
     @State private var prompt = ""
-    @State private var essay = "Write your essay here."
+    @State private var essay = "在这里写下你的作文。"
 
     var body: some View {
         VStack(spacing: 0) {
@@ -22,7 +22,7 @@ struct WritingRootView: View {
                     .frame(width: 320)
             }
         }
-        .navigationTitle(draftID == nil ? "New draft" : "Draft")
+        .navigationTitle(draftID == nil ? "新草稿" : "草稿")
         .accessibilityIdentifier("writing.root")
     }
 }
@@ -33,7 +33,7 @@ private struct WritingToolbar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            Picker("Mode", selection: $mode) {
+            Picker("写作模式", selection: $mode) {
                 ForEach(WritingMode.allCases) { mode in
                     Text(mode.title).tag(mode)
                 }
@@ -42,7 +42,7 @@ private struct WritingToolbar: View {
             .accessibilityIdentifier("writing.mode")
 
             if mode == .exam {
-                TextField("Task prompt", text: $prompt, axis: .vertical)
+                TextField("题目要求", text: $prompt, axis: .vertical)
                     .textFieldStyle(.roundedBorder)
                     .lineLimit(1...3)
                     .accessibilityIdentifier("writing.prompt")

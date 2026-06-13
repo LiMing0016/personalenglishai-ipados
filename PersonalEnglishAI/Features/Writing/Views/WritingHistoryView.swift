@@ -25,14 +25,14 @@ struct WritingHistoryView: View {
                 .accessibilityIdentifier("writing.draft.\(draft.id)")
             }
         }
-        .navigationTitle("Writing")
+        .navigationTitle("写作")
         .toolbar {
             Button {
                 selectedDraftID = drafts.first?.id
             } label: {
                 Image(systemName: "plus")
             }
-            .accessibilityLabel("New draft")
+            .accessibilityLabel("新建草稿")
             .accessibilityIdentifier("writing.newDraft")
         }
         .onAppear {

@@ -2,6 +2,28 @@ import SwiftUI
 
 struct AppRootView: View {
     @Environment(\.appEnvironment) private var appEnvironment
+
+    var body: some View {
+        AuthGateView(authSession: appEnvironment.authSession)
+    }
+}
+
+private struct AuthGateView: View {
+    @ObservedObject var authSession: AuthSession
+
+    var body: some View {
+        Group {
+            if authSession.isAuthenticated {
+                AppShellView()
+            } else {
+                LoginView()
+            }
+        }
+        .animation(.easeInOut(duration: 0.22), value: authSession.isAuthenticated)
+    }
+}
+
+private struct AppShellView: View {
     @State private var selectedTab: AppTab = .dashboard
     @State private var selectedConversationID: AssistantConversation.ID?
     @State private var selectedWritingDraftID: String?
@@ -37,6 +59,7 @@ private struct SidebarView: View {
                 } label: {
                     Label(tab.title, systemImage: tab.systemImage)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .listRowBackground(selectedTab == tab ? Color.accentColor.opacity(0.14) : Color.clear)

@@ -6,15 +6,27 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		FEA100000000000000000001 /* PersonalEnglishAI.app in Products */ = {isa = PBXBuildFile; fileRef = FEA100000000000000000002 /* PersonalEnglishAI.app */; };
-/* End PBXBuildFile section */
+/* Begin PBXContainerItemProxy section */
+		D2961E5E5F9445319FA7EE20 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FEA10000000000000000000B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FEA100000000000000000007;
+			remoteInfo = PersonalEnglishAI;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		4726D616CD354CF983B2EA4D /* PersonalEnglishAITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PersonalEnglishAITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FEA100000000000000000002 /* PersonalEnglishAI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PersonalEnglishAI.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		4A0F2C87DB7F4454A8713294 /* PersonalEnglishAITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = PersonalEnglishAITests;
+			sourceTree = "<group>";
+		};
 		FEA100000000000000000003 /* PersonalEnglishAI */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = PersonalEnglishAI;
@@ -23,6 +35,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		5518B0D215D2434CB07AF0F6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FEA100000000000000000004 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -37,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				FEA100000000000000000003 /* PersonalEnglishAI */,
+				4A0F2C87DB7F4454A8713294 /* PersonalEnglishAITests */,
 				FEA100000000000000000006 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -45,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				FEA100000000000000000002 /* PersonalEnglishAI.app */,
+				4726D616CD354CF983B2EA4D /* PersonalEnglishAITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -52,6 +73,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		3B3AA0ABCE114E12A941A550 /* PersonalEnglishAITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EF699A02E93F4CF9914609B5 /* Build configuration list for PBXNativeTarget "PersonalEnglishAITests" */;
+			buildPhases = (
+				8BDE64EC23414E09A73EE5EC /* Sources */,
+				5518B0D215D2434CB07AF0F6 /* Frameworks */,
+				F02C7E1A5B774956A6703BED /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D7D4B8857A854A5781BECF88 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				4A0F2C87DB7F4454A8713294 /* PersonalEnglishAITests */,
+			);
+			name = PersonalEnglishAITests;
+			packageProductDependencies = (
+			);
+			productName = PersonalEnglishAITests;
+			productReference = 4726D616CD354CF983B2EA4D /* PersonalEnglishAITests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		FEA100000000000000000007 /* PersonalEnglishAI */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = FEA100000000000000000008 /* Build configuration list for PBXNativeTarget "PersonalEnglishAI" */;
@@ -84,6 +128,10 @@
 				LastSwiftUpdateCheck = 2605;
 				LastUpgradeCheck = 2605;
 				TargetAttributes = {
+					3B3AA0ABCE114E12A941A550 = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = FEA100000000000000000007;
+					};
 					FEA100000000000000000007 = {
 						CreatedOnToolsVersion = 26.5;
 					};
@@ -104,11 +152,19 @@
 			projectRoot = "";
 			targets = (
 				FEA100000000000000000007 /* PersonalEnglishAI */,
+				3B3AA0ABCE114E12A941A550 /* PersonalEnglishAITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		F02C7E1A5B774956A6703BED /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FEA10000000000000000000A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -119,6 +175,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		8BDE64EC23414E09A73EE5EC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FEA100000000000000000009 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -128,7 +191,62 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		D7D4B8857A854A5781BECF88 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FEA100000000000000000007 /* PersonalEnglishAI */;
+			targetProxy = D2961E5E5F9445319FA7EE20 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		E1E691A378674077A567D846 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.personalenglishai.ipadosTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 2;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PersonalEnglishAI.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PersonalEnglishAI";
+			};
+			name = Release;
+		};
+		EBF11FF8358748FDA14DC802 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.personalenglishai.ipadosTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 2;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PersonalEnglishAI.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PersonalEnglishAI";
+			};
+			name = Debug;
+		};
 		FEA10000000000000000000D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -188,6 +306,7 @@
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_STRICT_CONCURRENCY = complete;
 			};
 			name = Debug;
@@ -273,6 +392,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 2;
 			};
@@ -310,11 +430,11 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		FEA10000000000000000000C /* Build configuration list for PBXProject "PersonalEnglishAI" */ = {
+		EF699A02E93F4CF9914609B5 /* Build configuration list for PBXNativeTarget "PersonalEnglishAITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				FEA10000000000000000000D /* Debug */,
-				FEA10000000000000000000E /* Release */,
+				EBF11FF8358748FDA14DC802 /* Debug */,
+				E1E691A378674077A567D846 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -324,6 +444,15 @@
 			buildConfigurations = (
 				FEA10000000000000000000F /* Debug */,
 				FEA100000000000000000010 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FEA10000000000000000000C /* Build configuration list for PBXProject "PersonalEnglishAI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FEA10000000000000000000D /* Debug */,
+				FEA10000000000000000000E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

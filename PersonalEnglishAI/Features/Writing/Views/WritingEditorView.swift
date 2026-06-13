@@ -20,7 +20,7 @@ struct WritingEditorView_Previews: PreviewProvider {
 }
 
 private struct WritingEditorPreview: View {
-    @State private var text = "Write your essay here."
+    @State private var text = "在这里写下你的作文。"
 
     var body: some View {
         WritingEditorView(text: $text)

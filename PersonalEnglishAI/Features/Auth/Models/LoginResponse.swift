@@ -2,6 +2,6 @@ import Foundation
 
 struct LoginResponse: Decodable {
     let token: String?
-    let userId: Int?
-    let email: String?
+    let tokenType: String?
+    let expiresIn: Int?
 }

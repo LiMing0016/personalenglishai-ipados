@@ -9,14 +9,14 @@ struct AssistantConversation: Identifiable, Hashable {
     static let samples = [
         AssistantConversation(
             id: "conversation-1",
-            title: "IELTS speaking practice",
-            summary: "Part 2 answer structure and vocabulary.",
+            title: "雅思口语练习",
+            summary: "Part 2 回答结构与高频表达。",
             updatedAt: .now
         ),
         AssistantConversation(
             id: "conversation-2",
-            title: "Grammar explanation",
-            summary: "When to use present perfect.",
+            title: "语法讲解",
+            summary: "什么时候使用现在完成时。",
             updatedAt: .now.addingTimeInterval(-3600)
         )
     ]

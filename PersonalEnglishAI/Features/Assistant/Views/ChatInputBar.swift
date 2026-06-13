@@ -6,7 +6,7 @@ struct ChatInputBar: View {
 
     var body: some View {
         HStack(alignment: .bottom, spacing: Spacing.sm) {
-            TextField("Ask about English learning", text: $text, axis: .vertical)
+            TextField("输入你的英语学习问题", text: $text, axis: .vertical)
                 .textFieldStyle(.roundedBorder)
                 .lineLimit(1...5)
                 .accessibilityIdentifier("assistant.input")
@@ -17,7 +17,7 @@ struct ChatInputBar: View {
             }
             .buttonStyle(.borderedProminent)
             .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            .accessibilityLabel("Send message")
+            .accessibilityLabel("发送消息")
             .accessibilityIdentifier("assistant.send")
         }
     }
@@ -30,7 +30,7 @@ struct ChatInputBar_Previews: PreviewProvider {
 }
 
 private struct ChatInputBarPreview: View {
-    @State private var text = "Can you explain this sentence?"
+    @State private var text = "可以帮我解释这个句子吗？"
 
     var body: some View {
         ChatInputBar(text: $text, send: {})

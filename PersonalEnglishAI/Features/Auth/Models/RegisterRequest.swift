@@ -1,7 +1,7 @@
 import Foundation
 
-struct LoginRequest: Encodable {
+struct RegisterRequest: Encodable {
     let email: String
     let password: String
-    let captchaToken: String
+    let nickname: String
 }

@@ -11,13 +11,13 @@ enum AppTab: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .dashboard:
-            "Home"
+            "首页"
         case .assistant:
-            "Assistant"
+            "AI 助手"
         case .writing:
-            "Writing"
+            "写作"
         case .profile:
-            "Profile"
+            "我的"
         }
     }
 

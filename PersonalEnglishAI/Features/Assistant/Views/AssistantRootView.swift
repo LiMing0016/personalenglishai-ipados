@@ -9,10 +9,10 @@ struct AssistantRootView: View {
         } else {
             EmptyStateView(
                 systemImage: "bubble.left.and.bubble.right",
-                title: "Select a conversation",
-                message: "Choose a conversation from the list or create a new one."
+                title: "选择一个对话",
+                message: "从左侧列表选择一个对话，或新建一次练习。"
             )
-            .navigationTitle("Assistant")
+            .navigationTitle("AI 助手")
         }
     }
 }
