@@ -8,6 +8,7 @@ struct LoginView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var confirmPassword = ""
+    @State private var acceptedLegalTerms = false
     @State private var isLoadingCaptcha = false
     @State private var isVerifyingCaptcha = false
     @State private var isSubmitting = false
@@ -16,6 +17,7 @@ struct LoginView: View {
     @State private var successMessage: String?
     @State private var pendingVerificationEmail: String?
     @State private var supportSheet: AuthSupportSheet?
+    @State private var legalDocument: LegalDocument?
     @State private var captchaErrorMessage: String?
     @State private var captchaChallenge: CaptchaChallenge?
     @State private var sliderX: CGFloat = 0
@@ -56,10 +58,13 @@ struct LoginView: View {
         case .signIn:
             Validation.isNonEmpty(email) && Validation.isNonEmpty(password)
         case .register:
-            Validation.isNonEmpty(nickname) &&
-                Validation.isNonEmpty(email) &&
-                Validation.isNonEmpty(password) &&
-                Validation.isNonEmpty(confirmPassword)
+            RegistrationPolicy.canSubmit(
+                nickname: nickname,
+                email: email,
+                password: password,
+                confirmPassword: confirmPassword,
+                acceptedLegalTerms: acceptedLegalTerms
+            )
         }
     }
 
@@ -120,6 +125,21 @@ struct LoginView: View {
                 )
                 .transition(.opacity)
             }
+
+            if let legalDocument {
+                LegalDocumentOverlay(
+                    document: legalDocument,
+                    onClose: { self.legalDocument = nil }
+                )
+                .transition(.opacity)
+            }
+        }
+        .onReceive(appEnvironment.authDeepLinkStore.$pendingAction) { action in
+            guard let action else {
+                return
+            }
+            presentDeepLinkAction(action)
+            appEnvironment.authDeepLinkStore.clearPendingAction()
         }
     }
 
@@ -181,6 +201,8 @@ struct LoginView: View {
                         }
                         .accessibilityIdentifier("auth.confirmPassword")
                         .padding(.bottom, Spacing.sm)
+
+                    legalAgreement
                 }
 
                 if let successMessage {
@@ -207,11 +229,11 @@ struct LoginView: View {
 
                         HStack(spacing: Spacing.sm) {
                             Button("重发验证邮件") {
-                                supportSheet = .verifyEmail(email: pendingVerificationEmail)
+                                supportSheet = .verifyEmail(email: pendingVerificationEmail, tokenOrLink: nil)
                             }
 
                             Button("我已有验证链接") {
-                                supportSheet = .verifyEmail(email: pendingVerificationEmail)
+                                supportSheet = .verifyEmail(email: pendingVerificationEmail, tokenOrLink: nil)
                             }
                         }
                         .buttonStyle(.bordered)
@@ -246,7 +268,7 @@ struct LoginView: View {
             HStack {
                 if authMode == .signIn {
                     Button(action: {
-                        supportSheet = .forgotPassword(email: email)
+                        supportSheet = .forgotPassword(email: email, tokenOrLink: nil)
                     }) {
                         Text("忘记密码？")
                             .padding(.vertical, 8)
@@ -490,6 +512,7 @@ struct LoginView: View {
         captchaChallenge = nil
         captchaErrorMessage = nil
         sliderX = 0
+        acceptedLegalTerms = false
         focusedField = authMode == .register ? .nickname : .email
     }
 
@@ -503,6 +526,10 @@ struct LoginView: View {
 
         guard trimmedEmail.contains("@"), trimmedEmail.contains(".") else {
             return "请输入有效的邮箱地址。"
+        }
+
+        guard acceptedLegalTerms else {
+            return "请先阅读并同意用户协议和隐私政策。"
         }
 
         guard password.count >= 8 else {
@@ -550,11 +577,65 @@ struct LoginView: View {
 
         return fallback
     }
+
+    private var legalAgreement: some View {
+        HStack(alignment: .top, spacing: Spacing.sm) {
+            Button {
+                acceptedLegalTerms.toggle()
+            } label: {
+                Image(systemName: acceptedLegalTerms ? "checkmark.square.fill" : "square")
+                    .font(.headline)
+                    .foregroundStyle(acceptedLegalTerms ? Color(red: 0.43, green: 0.86, blue: 1.0) : Color.white.opacity(0.54))
+                    .frame(width: 26, height: 26)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("auth.acceptLegalTerms")
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 4) {
+                    Text("我已阅读并同意")
+                        .foregroundStyle(Color.white.opacity(0.68))
+
+                    Button("用户协议") {
+                        legalDocument = .terms
+                    }
+
+                    Text("和")
+                        .foregroundStyle(Color.white.opacity(0.68))
+
+                    Button("隐私政策") {
+                        legalDocument = .privacy
+                    }
+                }
+
+                Text("注册即表示你理解账号、学习记录与 AI 交互数据的使用方式。")
+                    .foregroundStyle(Color.white.opacity(0.50))
+            }
+            .font(Typography.caption.weight(.semibold))
+            .buttonStyle(.borderless)
+            .foregroundStyle(Color(red: 0.43, green: 0.86, blue: 1.0))
+        }
+        .padding(.vertical, Spacing.xs)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func presentDeepLinkAction(_ action: AuthDeepLinkAction) {
+        captchaChallenge = nil
+        captchaErrorMessage = nil
+        errorMessage = nil
+
+        switch action {
+        case let .verifyEmail(token):
+            supportSheet = .verifyEmail(email: email, tokenOrLink: token)
+        case let .resetPassword(token):
+            supportSheet = .forgotPassword(email: email, tokenOrLink: token)
+        }
+    }
 }
 
 private enum AuthSupportSheet: Identifiable {
-    case forgotPassword(email: String)
-    case verifyEmail(email: String)
+    case forgotPassword(email: String, tokenOrLink: String?)
+    case verifyEmail(email: String, tokenOrLink: String?)
 
     var id: String {
         switch self {
@@ -562,6 +643,118 @@ private enum AuthSupportSheet: Identifiable {
             "forgot-password"
         case .verifyEmail:
             "verify-email"
+        }
+    }
+}
+
+private enum LegalDocument: Identifiable {
+    case terms
+    case privacy
+
+    var id: String {
+        switch self {
+        case .terms:
+            "terms"
+        case .privacy:
+            "privacy"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .terms:
+            "用户协议"
+        case .privacy:
+            "隐私政策"
+        }
+    }
+
+    var bodyText: String {
+        switch self {
+        case .terms:
+            """
+            欢迎使用 Personal English AI。你需要使用真实可接收邮件的邮箱注册账号，并妥善保管登录凭证。
+
+            本应用用于英语学习、写作训练与 AI 辅助反馈。请不要提交违法、侵权、骚扰或包含他人隐私的信息。
+
+            服务可能会根据学习功能、后端能力和订阅状态持续调整。重要变更会在应用内或邮件中提示。
+            """
+        case .privacy:
+            """
+            我们会处理你的账号邮箱、昵称、登录状态、学习记录、写作内容和与 AI 的交互数据，用于提供学习反馈、同步进度和保障账号安全。
+
+            你的密码会由后端安全存储；iPad 端仅保存访问 token，并在过期时尝试刷新登录态。
+
+            你可以通过退出登录清除本机登录态。后续会继续补充正式的数据导出、删除账号和隐私设置入口。
+            """
+        }
+    }
+}
+
+private struct LegalDocumentOverlay: View {
+    let document: LegalDocument
+    let onClose: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.56)
+                .ignoresSafeArea()
+                .onTapGesture(perform: onClose)
+
+            VStack(alignment: .leading, spacing: Spacing.lg) {
+                HStack {
+                    Text(document.title)
+                        .font(.title.weight(.bold))
+                        .foregroundStyle(.white)
+
+                    Spacer()
+
+                    Button(action: onClose) {
+                        Image(systemName: "xmark")
+                            .font(.headline.weight(.semibold))
+                            .frame(width: 36, height: 36)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.white.opacity(0.78))
+                    .background(Color.white.opacity(0.08), in: Circle())
+                    .accessibilityLabel("关闭")
+                }
+
+                ScrollView {
+                    Text(document.bodyText)
+                        .font(Typography.body)
+                        .lineSpacing(6)
+                        .foregroundStyle(Color.white.opacity(0.76))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                Button(action: onClose) {
+                    Label("我知道了", systemImage: "checkmark")
+                        .font(.headline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(GradientButtonStyle())
+            }
+            .padding(28)
+            .frame(width: 520, height: 480)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.10, green: 0.14, blue: 0.24).opacity(0.98),
+                                Color(red: 0.07, green: 0.10, blue: 0.18).opacity(0.98)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            }
+            .shadow(color: .black.opacity(0.42), radius: 32, x: 0, y: 20)
         }
     }
 }
@@ -585,8 +778,9 @@ private struct AuthSupportSheetView: View {
         self.sheet = sheet
         self.onClose = onClose
         switch sheet {
-        case let .forgotPassword(email), let .verifyEmail(email):
+        case let .forgotPassword(email, tokenOrLink), let .verifyEmail(email, tokenOrLink):
             _email = State(initialValue: email)
+            _tokenOrLink = State(initialValue: tokenOrLink ?? "")
         }
     }
 

@@ -8,6 +8,7 @@ struct AppEnvironment: @unchecked Sendable {
     let authService: AuthService
     let userService: UserService
     let subscriptionService: SubscriptionService
+    let authDeepLinkStore: AuthDeepLinkStore
 
     init(
         configuration: AppConfiguration,
@@ -15,7 +16,8 @@ struct AppEnvironment: @unchecked Sendable {
         apiClient: APIClient,
         authService: AuthService,
         userService: UserService,
-        subscriptionService: SubscriptionService
+        subscriptionService: SubscriptionService,
+        authDeepLinkStore: AuthDeepLinkStore
     ) {
         self.configuration = configuration
         self.authSession = authSession
@@ -23,14 +25,30 @@ struct AppEnvironment: @unchecked Sendable {
         self.authService = authService
         self.userService = userService
         self.subscriptionService = subscriptionService
+        self.authDeepLinkStore = authDeepLinkStore
     }
 }
 
 extension AppEnvironment {
     static let live: AppEnvironment = {
         let authSession = AuthSession(tokenStore: KeychainTokenStore(service: "PersonalEnglishAI"))
+        let authDeepLinkStore = AuthDeepLinkStore()
         var apiClient = APIClient(configuration: .development)
         apiClient.tokenProvider = { authSession.accessToken }
+        apiClient.tokenRefreshProvider = {
+            let refreshService = LiveAuthService(apiClient: APIClient(configuration: .development))
+            let response = try await refreshService.refresh()
+
+            guard let token = response.token, !token.isEmpty else {
+                throw APIError.missingToken
+            }
+
+            try authSession.updateAccessToken(token)
+            return token
+        }
+        apiClient.unauthorizedHandler = {
+            authSession.clear()
+        }
 
         return AppEnvironment(
             configuration: .development,
@@ -38,7 +56,8 @@ extension AppEnvironment {
             apiClient: apiClient,
             authService: LiveAuthService(apiClient: apiClient),
             userService: LiveUserService(apiClient: apiClient),
-            subscriptionService: LiveSubscriptionService(apiClient: apiClient)
+            subscriptionService: LiveSubscriptionService(apiClient: apiClient),
+            authDeepLinkStore: authDeepLinkStore
         )
     }()
 
@@ -48,7 +67,8 @@ extension AppEnvironment {
         apiClient: APIClient(configuration: .preview),
         authService: MockAuthService(),
         userService: MockUserService(),
-        subscriptionService: MockSubscriptionService()
+        subscriptionService: MockSubscriptionService(),
+        authDeepLinkStore: AuthDeepLinkStore()
     )
 }
 

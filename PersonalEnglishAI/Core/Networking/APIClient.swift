@@ -4,34 +4,37 @@ struct APIClient {
     let configuration: AppConfiguration
     var urlSession: URLSession = .shared
     var tokenProvider: (() -> String?)?
+    var tokenRefreshProvider: (() async throws -> String?)?
+    var unauthorizedHandler: (() async -> Void)?
 
     func send<Response: Decodable>(
         _ endpoint: APIEndpoint,
         body: (any Encodable)? = nil,
-        responseType: Response.Type = Response.self
+        responseType: Response.Type = Response.self,
+        allowsTokenRefresh: Bool = true
     ) async throws -> Response {
         let request = try makeRequest(endpoint, body: body)
-        let (data, response) = try await urlSession.data(for: request)
+        let (data, response) = try await perform(request)
 
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.invalidResponse
+        if response.statusCode == 401, allowsTokenRefresh, let tokenRefreshProvider {
+            do {
+                if let refreshedToken = try await tokenRefreshProvider(), !refreshedToken.isEmpty {
+                    let retryRequest = try makeRequest(endpoint, body: body, accessTokenOverride: refreshedToken)
+                    let (retryData, retryResponse) = try await perform(retryRequest)
+                    return try await decode(retryData, response: retryResponse, responseType: responseType)
+                }
+            } catch {
+                await unauthorizedHandler?()
+            }
         }
 
-        guard (200..<300).contains(httpResponse.statusCode) else {
-            let message = try? JSONDecoder.api.decode(APIErrorResponse.self, from: data).message
-            throw APIError.requestFailed(statusCode: httpResponse.statusCode, message: message)
-        }
-
-        do {
-            return try JSONDecoder.api.decode(Response.self, from: data)
-        } catch {
-            throw APIError.decodingFailed
-        }
+        return try await decode(data, response: response, responseType: responseType)
     }
 
     private func makeRequest(
         _ endpoint: APIEndpoint,
-        body: (any Encodable)?
+        body: (any Encodable)?,
+        accessTokenOverride: String? = nil
     ) throws -> URLRequest {
         guard var components = URLComponents(
             url: configuration.apiBaseURL.appending(path: endpoint.path),
@@ -50,7 +53,8 @@ struct APIClient {
         request.httpMethod = endpoint.method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
-        if let token = tokenProvider?(), !token.isEmpty {
+        let token = accessTokenOverride ?? tokenProvider?()
+        if let token, !token.isEmpty {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
@@ -60,6 +64,37 @@ struct APIClient {
         }
 
         return request
+    }
+
+    private func perform(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        let (data, response) = try await urlSession.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+
+        return (data, httpResponse)
+    }
+
+    private func decode<Response: Decodable>(
+        _ data: Data,
+        response: HTTPURLResponse,
+        responseType: Response.Type
+    ) async throws -> Response {
+        guard (200..<300).contains(response.statusCode) else {
+            if response.statusCode == 401 {
+                await unauthorizedHandler?()
+            }
+
+            let message = try? JSONDecoder.api.decode(APIErrorResponse.self, from: data).message
+            throw APIError.requestFailed(statusCode: response.statusCode, message: message)
+        }
+
+        do {
+            return try JSONDecoder.api.decode(Response.self, from: data)
+        } catch {
+            throw APIError.decodingFailed
+        }
     }
 }
 

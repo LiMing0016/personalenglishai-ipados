@@ -12,6 +12,7 @@ protocol AuthService {
     func forgotPassword(email: String) async throws
     func validateResetToken(_ token: String) async throws -> AuthStatusResponse
     func resetPassword(token: String, password: String) async throws
+    func refresh() async throws -> LoginResponse
 }
 
 struct LiveAuthService: AuthService {
@@ -136,6 +137,20 @@ struct LiveAuthService: AuthService {
             responseType: APIEnvelope<EmptyAPIResponse>.self
         )
     }
+
+    func refresh() async throws -> LoginResponse {
+        let envelope = try await apiClient.send(
+            APIEndpoint(method: .post, path: "/v1/auth/refresh"),
+            responseType: APIEnvelope<LoginResponse>.self,
+            allowsTokenRefresh: false
+        )
+
+        guard let response = envelope.data, response.token?.isEmpty == false else {
+            throw APIError.missingToken
+        }
+
+        return response
+    }
 }
 
 struct MockAuthService: AuthService {
@@ -174,6 +189,10 @@ struct MockAuthService: AuthService {
     }
 
     func resetPassword(token: String, password: String) async throws {}
+
+    func refresh() async throws -> LoginResponse {
+        LoginResponse(token: "preview-token", tokenType: "Bearer", expiresIn: 3600)
+    }
 
     private static var previewBackgroundImage: String {
         makePNGDataURL(size: CGSize(width: 300, height: 150), opaque: true) { context, rect in

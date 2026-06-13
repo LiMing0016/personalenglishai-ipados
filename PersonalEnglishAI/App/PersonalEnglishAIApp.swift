@@ -8,6 +8,9 @@ struct PersonalEnglishAIApp: App {
         WindowGroup {
             AppRootView()
                 .environment(\.appEnvironment, appEnvironment)
+                .onOpenURL { url in
+                    appEnvironment.authDeepLinkStore.handle(url)
+                }
         }
     }
 }

@@ -290,6 +290,84 @@ final class LiveAuthServiceTests: XCTestCase {
 
         try await service.resetPassword(token: "reset-token", password: "Newpass123")
     }
+
+    func testRefreshPostsRefreshEndpointAndReturnsEnvelopeToken() async throws {
+        MockURLProtocol.handler = { request in
+            XCTAssertEqual(request.url?.path, "/api/v1/auth/refresh")
+            XCTAssertEqual(request.httpMethod, "POST")
+
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            ))
+            return (response, Data(#"{"code":"0","message":"OK","data":{"token":"refreshed-token","tokenType":"Bearer","expiresIn":3600}}"#.utf8))
+        }
+
+        let service = LiveAuthService(apiClient: APIClient(
+            configuration: AppConfiguration(apiBaseURL: URL(string: "https://example.com/api")!, appName: "Test"),
+            urlSession: .mocked
+        ))
+
+        let response = try await service.refresh()
+
+        XCTAssertEqual(response.token, "refreshed-token")
+    }
+
+    func testAPIClientRefreshesTokenAndRetriesUnauthorizedRequest() async throws {
+        struct ProtectedResponse: Decodable {
+            let value: String
+        }
+
+        var currentToken = "expired-token"
+        var requests: [URLRequest] = []
+        var didRefresh = false
+
+        MockURLProtocol.handler = { request in
+            requests.append(request)
+
+            if requests.count == 1 {
+                XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer expired-token")
+                let response = try XCTUnwrap(HTTPURLResponse(
+                    url: XCTUnwrap(request.url),
+                    statusCode: 401,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                ))
+                return (response, Data(#"{"code":"401","message":"token expired","data":null}"#.utf8))
+            }
+
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer refreshed-token")
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: XCTUnwrap(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            ))
+            return (response, Data(#"{"value":"ok"}"#.utf8))
+        }
+
+        var apiClient = APIClient(
+            configuration: AppConfiguration(apiBaseURL: URL(string: "https://example.com/api")!, appName: "Test"),
+            urlSession: .mocked
+        )
+        apiClient.tokenProvider = { currentToken }
+        apiClient.tokenRefreshProvider = {
+            didRefresh = true
+            currentToken = "refreshed-token"
+            return currentToken
+        }
+
+        let response = try await apiClient.send(
+            APIEndpoint(method: .get, path: "/v1/protected"),
+            responseType: ProtectedResponse.self
+        )
+
+        XCTAssertTrue(didRefresh)
+        XCTAssertEqual(requests.count, 2)
+        XCTAssertEqual(response.value, "ok")
+    }
 }
 
 private final class MockURLProtocol: URLProtocol {
