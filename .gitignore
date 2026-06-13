@@ -1,0 +1,12 @@
+.DS_Store
+DerivedData/
+node_modules/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+.superpowers/
+*.xcuserdata/
+xcuserdata/
+*.xcuserstate
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
