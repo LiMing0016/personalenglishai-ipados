@@ -1,7 +1,7 @@
 import Combine
 import Foundation
 
-final class AuthSession: ObservableObject {
+final class AuthSession: ObservableObject, @unchecked Sendable {
     private let tokenStore: TokenStore
     @Published private(set) var accessToken: String?
     @Published private(set) var isRestoring = false

@@ -1,6 +1,6 @@
 import Foundation
 
-enum AppTab: String, CaseIterable, Identifiable {
+enum AppTab: String, CaseIterable, Hashable, Identifiable {
     case dashboard
     case assistant
     case writing
