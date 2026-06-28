@@ -25,49 +25,112 @@ enum AssistantMode: String, CaseIterable, Identifiable, Hashable {
     }
 }
 
-enum AssistantModelSelection: String, CaseIterable, Identifiable, Hashable {
-    case openAI
-    case kimi
-    case qwen
+struct AssistantModelSelection: Identifiable, Hashable, Decodable {
+    let id: String
+    let title: String
+    let subtitle: String
+    let provider: String
+    let model: String
+    let isDefault: Bool
+    let supportsStreaming: Bool
+    let supportsAttachments: Bool
+    let supportsVision: Bool
+    let maxInputTokens: Int?
+    let status: String?
 
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .openAI:
-            "OpenAI"
-        case .kimi:
-            "Kimi"
-        case .qwen:
-            "Qwen"
-        }
+    init(
+        id: String? = nil,
+        title: String,
+        subtitle: String,
+        provider: String,
+        model: String,
+        isDefault: Bool = false,
+        supportsStreaming: Bool = true,
+        supportsAttachments: Bool = true,
+        supportsVision: Bool = false,
+        maxInputTokens: Int? = nil,
+        status: String? = "available"
+    ) {
+        self.id = id ?? "\(provider):\(model)"
+        self.title = title
+        self.subtitle = subtitle
+        self.provider = provider
+        self.model = model
+        self.isDefault = isDefault
+        self.supportsStreaming = supportsStreaming
+        self.supportsAttachments = supportsAttachments
+        self.supportsVision = supportsVision
+        self.maxInputTokens = maxInputTokens
+        self.status = status
     }
 
-    var subtitle: String {
-        switch self {
-        case .openAI:
-            "gpt-5.4-mini"
-        case .kimi:
-            "kimi-k2.5"
-        case .qwen:
-            "qwen-plus"
-        }
+    enum CodingKeys: String, CodingKey {
+        case backendID = "id"
+        case label
+        case provider
+        case isDefault = "default"
+        case supportsStreaming
+        case supportsAttachments
+        case supportsVision
+        case maxInputTokens
+        case status
     }
 
-    var provider: String {
-        switch self {
-        case .openAI:
-            "openai"
-        case .kimi:
-            "kimi"
-        case .qwen:
-            "qwen"
-        }
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let model = try container.decode(String.self, forKey: .backendID)
+        let provider = try container.decode(String.self, forKey: .provider)
+        let label = try container.decodeIfPresent(String.self, forKey: .label) ?? model
+
+        self.init(
+            title: label,
+            subtitle: model,
+            provider: provider,
+            model: model,
+            isDefault: try container.decodeIfPresent(Bool.self, forKey: .isDefault) ?? false,
+            supportsStreaming: try container.decodeIfPresent(Bool.self, forKey: .supportsStreaming) ?? true,
+            supportsAttachments: try container.decodeIfPresent(Bool.self, forKey: .supportsAttachments) ?? false,
+            supportsVision: try container.decodeIfPresent(Bool.self, forKey: .supportsVision) ?? false,
+            maxInputTokens: try container.decodeIfPresent(Int.self, forKey: .maxInputTokens),
+            status: try container.decodeIfPresent(String.self, forKey: .status)
+        )
     }
 
-    var model: String {
-        subtitle
-    }
+    static let openAI = AssistantModelSelection(
+        title: "OpenAI",
+        subtitle: "gpt-5.4-mini",
+        provider: "openai",
+        model: "gpt-5.4-mini",
+        isDefault: true,
+        supportsStreaming: true,
+        supportsAttachments: true,
+        supportsVision: true,
+        maxInputTokens: 128000
+    )
+
+    static let kimi = AssistantModelSelection(
+        title: "Kimi",
+        subtitle: "kimi-k2.5",
+        provider: "kimi",
+        model: "kimi-k2.5",
+        supportsStreaming: true,
+        supportsAttachments: false,
+        supportsVision: false,
+        maxInputTokens: 128000
+    )
+
+    static let qwen = AssistantModelSelection(
+        title: "Qwen",
+        subtitle: "qwen-plus",
+        provider: "qwen",
+        model: "qwen-plus",
+        supportsStreaming: true,
+        supportsAttachments: true,
+        supportsVision: false,
+        maxInputTokens: 32000
+    )
+
+    static let allCases: [AssistantModelSelection] = [.openAI, .kimi, .qwen]
 }
 
 struct AssistantRequest: Encodable {
@@ -131,6 +194,11 @@ struct AssistantRequest: Encodable {
 struct CreateAssistantConversationRequest: Encodable {
     let title: String?
     let projectId: Int?
+}
+
+struct UpdateAssistantConversationRequest: Encodable {
+    let title: String
+    let summary: String?
 }
 
 struct AssistantProjectRequest: Encodable {

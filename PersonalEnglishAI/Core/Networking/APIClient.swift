@@ -49,7 +49,7 @@ struct APIClient: @unchecked Sendable {
             throw APIError.invalidURL
         }
 
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: url, timeoutInterval: configuration.requestTimeoutInterval)
         request.httpMethod = endpoint.method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
@@ -163,7 +163,7 @@ private enum DateFormatters {
         return formatter
     }()
 
-    nonisolated(unsafe) static let localDateTime: DateFormatter = {
+    static let localDateTime: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = .current

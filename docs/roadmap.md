@@ -37,7 +37,7 @@
 
 ## Phase 2: 学习助手 MVP
 
-状态：planned。
+状态：in progress。
 
 范围：
 
@@ -47,6 +47,8 @@
 - 发送消息
 - 先支持非流式回复
 - 基础闭环稳定后再支持流式回复
+- 当前优先完成 [AI 助手 P0 稳定闭环](./ai-assistant-p0)。
+- P1 聊天核心体验见 [AI 助手 P1 聊天核心体验](./ai-assistant-p1)。
 
 ## Phase 3: 写作 MVP
 

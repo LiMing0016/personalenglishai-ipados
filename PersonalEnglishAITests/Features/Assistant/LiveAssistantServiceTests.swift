@@ -31,6 +31,32 @@ final class LiveAssistantServiceTests: XCTestCase {
         XCTAssertTrue(conversations[0].pinned)
     }
 
+    func testListModelsUsesAssistantModelsEndpoint() async throws {
+        AssistantMockURLProtocol.handler = { request in
+            XCTAssertEqual(request.url?.path, "/api/assistant/models")
+            XCTAssertEqual(request.httpMethod, "GET")
+
+            return try Self.jsonResponse(
+                request: request,
+                body: """
+                {"code":"0","message":"OK","data":[{"id":"gpt-5.4-mini","label":"GPT-5.4 Mini","provider":"openai","default":true,"supportsStreaming":true,"supportsAttachments":true,"supportsVision":true,"maxInputTokens":128000,"status":"available"},{"id":"qwen-plus","label":"Qwen Plus","provider":"qwen","default":false,"supportsStreaming":true,"supportsAttachments":true,"supportsVision":false,"maxInputTokens":32000,"status":"available"}]}
+                """
+            )
+        }
+
+        let models = try await makeService().listModels()
+
+        XCTAssertEqual(models.map(\.id), ["openai:gpt-5.4-mini", "qwen:qwen-plus"])
+        XCTAssertEqual(models[0].title, "GPT-5.4 Mini")
+        XCTAssertEqual(models[0].provider, "openai")
+        XCTAssertEqual(models[0].model, "gpt-5.4-mini")
+        XCTAssertTrue(models[0].isDefault)
+        XCTAssertTrue(models[0].supportsAttachments)
+        XCTAssertTrue(models[0].supportsVision)
+        XCTAssertEqual(models[0].maxInputTokens, 128000)
+        XCTAssertEqual(models[0].status, "available")
+    }
+
     func testCreateConversationPostsTitleAndProject() async throws {
         AssistantMockURLProtocol.handler = { request in
             XCTAssertEqual(request.url?.path, "/api/assistant/conversations")
@@ -433,6 +459,33 @@ final class LiveAssistantServiceTests: XCTestCase {
             "DELETE /api/assistant/shares/share-1",
             "DELETE /api/assistant/conversations/conv-1"
         ])
+    }
+
+    func testRenameConversationPatchesTitleAndSummary() async throws {
+        AssistantMockURLProtocol.handler = { request in
+            XCTAssertEqual(request.url?.path, "/api/assistant/conversations/conv-1")
+            XCTAssertEqual(request.httpMethod, "PATCH")
+
+            let payload = try XCTUnwrap(request.peaiJSONBody)
+            XCTAssertEqual(payload["title"] as? String, "新的对话标题")
+            XCTAssertEqual(payload["summary"] as? String, "新的摘要")
+
+            return try Self.jsonResponse(
+                request: request,
+                body: """
+                {"code":"0","message":"OK","data":{"id":"conv-1","projectId":null,"title":"新的对话标题","summary":"新的摘要","pinned":false,"archived":false,"createdAt":"2026-06-14T09:00:00","updatedAt":"2026-06-14T09:03:00","messages":[]}}
+                """
+            )
+        }
+
+        let conversation = try await makeService().renameConversation(
+            id: "conv-1",
+            title: "新的对话标题",
+            summary: "新的摘要"
+        )
+
+        XCTAssertEqual(conversation.title, "新的对话标题")
+        XCTAssertEqual(conversation.summary, "新的摘要")
     }
 
     func testSSEParserKeepsCompleteDataBlocks() throws {

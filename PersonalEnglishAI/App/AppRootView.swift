@@ -32,9 +32,10 @@ private struct AuthGateView: View {
 
 private struct AppShellView: View {
     @StateObject private var assistantStore: AssistantStore
-    @State private var selectedTab: AppTab = .dashboard
+    @State private var selectedTab: AppTab = .assistant
     @State private var selectedConversationID: AssistantConversation.ID?
     @State private var selectedWritingDraftID: String?
+    @State private var isSidebarCollapsed = false
 
     init(assistantService: AssistantService, configuration: AppConfiguration) {
         let shareBaseURL = configuration.apiBaseURL.deletingLastPathComponent()
@@ -45,21 +46,113 @@ private struct AppShellView: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            PrimaryRailView(selectedTab: $selectedTab)
+        GeometryReader { proxy in
+            let sidebarWidth = AppShellLayout.sidebarWidth(
+                containerWidth: proxy.size.width,
+                isSidebarCollapsed: isSidebarCollapsed
+            )
 
-            Divider()
+            ZStack(alignment: .topLeading) {
+                HStack(spacing: 0) {
+                    if !isSidebarCollapsed {
+                        AssistantWorkspaceSidebarView(
+                            store: assistantStore,
+                            selectedConversationID: $selectedConversationID,
+                            selectedScene: selectedScene,
+                            selectScene: selectScene,
+                            toggleCollapsed: toggleSidebar,
+                            createConversation: createConversation,
+                            runQuickTask: runQuickTask
+                        )
+                        .frame(width: sidebarWidth)
 
-            NavigationStack {
-                AppContentView(
-                    selectedConversationID: $selectedConversationID,
-                    selectedWritingDraftID: $selectedWritingDraftID,
-                    selectedTab: $selectedTab,
-                    assistantStore: assistantStore
-                )
+                        Divider()
+                    }
+
+                    NavigationStack {
+                        AppContentView(
+                            selectedConversationID: $selectedConversationID,
+                            selectedWritingDraftID: $selectedWritingDraftID,
+                            selectedTab: $selectedTab,
+                            assistantStore: assistantStore
+                        )
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+
+                if isSidebarCollapsed {
+                    sidebarRevealButton
+                        .padding(.leading, Spacing.md)
+                        .padding(.top, Spacing.md)
+                }
             }
+            .animation(.easeInOut(duration: 0.22), value: isSidebarCollapsed)
         }
         .background(Color.peaiBackground)
+    }
+
+    private var sidebarRevealButton: some View {
+        Button(action: toggleSidebar) {
+            Image(systemName: "sidebar.leading")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+                .frame(width: 44, height: 44)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color(.separator).opacity(0.18), lineWidth: 1)
+                }
+                .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("展开侧栏")
+        .accessibilityIdentifier("app.sidebar.toggle")
+    }
+
+    private var selectedScene: AssistantSidebarScene {
+        switch selectedTab {
+        case .assistant:
+            .assistant
+        case .writing:
+            .writing
+        case .dashboard:
+            .archive
+        case .profile:
+            .profile
+        }
+    }
+
+    private func selectScene(_ scene: AssistantSidebarScene) {
+        selectedTab = scene.destinationTab
+    }
+
+    private func toggleSidebar() {
+        isSidebarCollapsed.toggle()
+    }
+
+    private func createConversation() {
+        selectedTab = .assistant
+        Task {
+            if let id = await assistantStore.createConversation() {
+                selectedConversationID = id
+            }
+        }
+    }
+
+    private func runQuickTask(_ task: AssistantSidebarQuickTask) {
+        selectedTab = .assistant
+        Task {
+            let conversationID: AssistantConversation.ID?
+            if let selectedConversationID {
+                conversationID = selectedConversationID
+            } else {
+                conversationID = await assistantStore.createConversation()
+            }
+            if let conversationID {
+                selectedConversationID = conversationID
+                _ = await assistantStore.send(text: task.prompt, conversationID: conversationID)
+            }
+        }
     }
 }
 
@@ -75,7 +168,7 @@ private struct PrimaryRailView: View {
                 .background(Color.peaiAccent.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
                 .accessibilityHidden(true)
 
-            ForEach(AppTab.allCases) { tab in
+            ForEach(AppTab.primaryTabs) { tab in
                 Button {
                     selectedTab = tab
                 } label: {
@@ -121,7 +214,7 @@ private struct AppContentView: View {
                     selectedConversationID: $selectedConversationID
                 )
             case .writing:
-                WritingRootView(draftID: selectedWritingDraftID)
+                WritingHubView(selectedDraftID: $selectedWritingDraftID)
             case .profile:
                 ProfileView()
             }

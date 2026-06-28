@@ -1,6 +1,7 @@
 import Foundation
 
 protocol AssistantService: Sendable {
+    func listModels() async throws -> [AssistantModelSelection]
     func listProjects() async throws -> [AssistantProject]
     func createProject(name: String, description: String) async throws -> AssistantProject
     func updateProject(id: Int, name: String, description: String) async throws -> AssistantProject
@@ -8,6 +9,7 @@ protocol AssistantService: Sendable {
     func listConversations(archived: Bool?, projectId: Int?) async throws -> [AssistantConversation]
     func createConversation(title: String?, projectId: Int?) async throws -> AssistantConversation
     func getConversation(id: AssistantConversation.ID) async throws -> AssistantConversation
+    func renameConversation(id: AssistantConversation.ID, title: String, summary: String?) async throws -> AssistantConversation
     func sendAgentMessage(
         conversationID: AssistantConversation.ID,
         text: String,
@@ -41,6 +43,10 @@ protocol AssistantService: Sendable {
 }
 
 struct MockAssistantService: AssistantService {
+    func listModels() async throws -> [AssistantModelSelection] {
+        AssistantModelSelection.allCases
+    }
+
     func listProjects() async throws -> [AssistantProject] {
         [
             AssistantProject(id: 1, name: "雅思备考", description: "口语和写作练习", createdAt: .now, updatedAt: .now)
@@ -73,6 +79,13 @@ struct MockAssistantService: AssistantService {
 
     func getConversation(id: AssistantConversation.ID) async throws -> AssistantConversation {
         AssistantConversation.samples.first { $0.id == id } ?? AssistantConversation.samples[0]
+    }
+
+    func renameConversation(id: AssistantConversation.ID, title: String, summary: String?) async throws -> AssistantConversation {
+        var conversation = try await getConversation(id: id)
+        conversation.title = title
+        conversation.summary = summary
+        return conversation
     }
 
     func sendAgentMessage(
@@ -152,6 +165,13 @@ struct LiveAssistantService: AssistantService {
 
     let apiClient: APIClient
 
+    func listModels() async throws -> [AssistantModelSelection] {
+        try await unwrap(apiClient.send(
+            APIEndpoint(method: .get, path: "/assistant/models"),
+            responseType: APIEnvelope<[AssistantModelSelection]>.self
+        ))
+    }
+
     func listProjects() async throws -> [AssistantProject] {
         try await unwrap(apiClient.send(
             APIEndpoint(method: .get, path: "/assistant/projects"),
@@ -208,6 +228,14 @@ struct LiveAssistantService: AssistantService {
     func getConversation(id: AssistantConversation.ID) async throws -> AssistantConversation {
         try await unwrap(apiClient.send(
             APIEndpoint(method: .get, path: "/assistant/conversations/\(id)"),
+            responseType: APIEnvelope<AssistantConversation>.self
+        ))
+    }
+
+    func renameConversation(id: AssistantConversation.ID, title: String, summary: String?) async throws -> AssistantConversation {
+        try await unwrap(apiClient.send(
+            APIEndpoint(method: .patch, path: "/assistant/conversations/\(id)"),
+            body: UpdateAssistantConversationRequest(title: title, summary: summary),
             responseType: APIEnvelope<AssistantConversation>.self
         ))
     }

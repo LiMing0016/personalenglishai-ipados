@@ -10,6 +10,7 @@ struct AssistantMessage: Identifiable, Hashable, Decodable {
         case done
         case failed
         case loading
+        case cancelled
     }
 
     let id: String

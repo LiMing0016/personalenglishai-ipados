@@ -19,6 +19,7 @@ struct LoginView: View {
     @State private var supportSheet: AuthSupportSheet?
     @State private var legalDocument: LegalDocument?
     @State private var captchaErrorMessage: String?
+    @State private var captchaStatusMessage: String?
     @State private var captchaChallenge: CaptchaChallenge?
     @State private var sliderX: CGFloat = 0
     @FocusState private var focusedField: Field?
@@ -77,6 +78,26 @@ struct LoginView: View {
         }
     }
 
+    private var loginFlowState: LoginFlowState {
+        LoginFlowState(
+            captchaChallenge: captchaChallenge,
+            sliderX: sliderX,
+            captchaErrorMessage: captchaErrorMessage,
+            captchaStatusMessage: captchaStatusMessage,
+            errorMessage: errorMessage,
+            pendingVerificationEmail: pendingVerificationEmail
+        )
+    }
+
+    private func applyLoginFlowState(_ state: LoginFlowState) {
+        captchaChallenge = state.captchaChallenge
+        sliderX = state.sliderX
+        captchaErrorMessage = state.captchaErrorMessage
+        captchaStatusMessage = state.captchaStatusMessage
+        errorMessage = state.errorMessage
+        pendingVerificationEmail = state.pendingVerificationEmail
+    }
+
     private func primaryAction() {
         switch authMode {
         case .signIn:
@@ -110,6 +131,8 @@ struct LoginView: View {
                     challenge: captchaChallenge,
                     sliderX: $sliderX,
                     isVerifying: isVerifyingCaptcha,
+                    isLoginSubmitting: isSubmitting,
+                    statusMessage: captchaStatusMessage,
                     errorMessage: captchaErrorMessage,
                     onClose: closeCaptcha,
                     onReload: { Task { await loadCaptcha() } },
@@ -415,6 +438,7 @@ struct LoginView: View {
     private func loadCaptcha() async {
         isLoadingCaptcha = true
         captchaErrorMessage = nil
+        captchaStatusMessage = nil
         errorMessage = nil
         sliderX = 0
 
@@ -437,34 +461,42 @@ struct LoginView: View {
         captchaErrorMessage = nil
         defer { isVerifyingCaptcha = false }
 
+        let verification: CaptchaVerification
         do {
-            let verification = try await appEnvironment.authService.verifyCaptcha(
+            verification = try await appEnvironment.authService.verifyCaptcha(
                 captchaId: captchaChallenge.captchaId,
                 x: x
             )
-
-            guard verification.verified, let captchaToken = verification.captchaToken else {
-                await refreshCaptchaAfterVerificationFailure(message: "验证失败，已刷新验证码。")
-                return
-            }
-
-            self.captchaChallenge = nil
-            sliderX = 0
-            try await submitLogin(captchaToken: captchaToken)
         } catch {
             await refreshCaptchaAfterVerificationFailure(
                 message: friendlyMessage(for: error, fallback: "验证码校验失败，已刷新验证码。")
             )
+            return
+        }
+
+        guard verification.verified, let captchaToken = verification.captchaToken else {
+            await refreshCaptchaAfterVerificationFailure(message: "验证失败，已刷新验证码。")
+            return
+        }
+
+        var state = loginFlowState
+        state.markCaptchaVerifiedAndLoginSubmitting(message: "验证通过，正在登录...")
+        applyLoginFlowState(state)
+
+        do {
+            try await submitLogin(captchaToken: captchaToken)
+        } catch {
+            return
         }
     }
 
     @MainActor
     private func refreshCaptchaAfterVerificationFailure(message: String) async {
-        sliderX = 0
-
         do {
-            captchaChallenge = try await appEnvironment.authService.fetchCaptcha()
-            captchaErrorMessage = message
+            let refreshedChallenge = try await appEnvironment.authService.fetchCaptcha()
+            var state = loginFlowState
+            state.markCaptchaVerificationFailed(message: message, refreshedChallenge: refreshedChallenge)
+            applyLoginFlowState(state)
         } catch {
             captchaErrorMessage = friendlyMessage(for: error, fallback: "验证码刷新失败，请确认后端服务已启动。")
         }
@@ -487,13 +519,23 @@ struct LoginView: View {
             }
 
             try appEnvironment.authSession.updateAccessToken(token)
+
+            var state = loginFlowState
+            state.markLoginSubmissionSucceeded()
+            applyLoginFlowState(state)
         } catch {
+            let pendingEmail: String?
             if case let APIError.requestFailed(statusCode, _) = error, statusCode == 403 {
-                pendingVerificationEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+                pendingEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
             } else {
-                pendingVerificationEmail = nil
+                pendingEmail = nil
             }
-            errorMessage = friendlyMessage(for: error, fallback: "登录失败，请检查账号密码。")
+            var state = loginFlowState
+            state.markLoginSubmissionFailed(
+                message: friendlyMessage(for: error, fallback: "登录失败，请检查账号密码。"),
+                pendingVerificationEmail: pendingEmail
+            )
+            applyLoginFlowState(state)
             throw error
         }
     }
@@ -501,6 +543,7 @@ struct LoginView: View {
     private func closeCaptcha() {
         captchaChallenge = nil
         captchaErrorMessage = nil
+        captchaStatusMessage = nil
         sliderX = 0
     }
 
@@ -511,6 +554,7 @@ struct LoginView: View {
         pendingVerificationEmail = nil
         captchaChallenge = nil
         captchaErrorMessage = nil
+        captchaStatusMessage = nil
         sliderX = 0
         acceptedLegalTerms = false
         focusedField = authMode == .register ? .nickname : .email
@@ -572,6 +616,17 @@ struct LoginView: View {
                 return "登录成功但没有收到 token，请检查后端响应。"
             default:
                 return fallback
+            }
+        }
+
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .timedOut:
+                return "登录请求超时，请确认后端服务正常后重试。"
+            case .cannotConnectToHost, .cannotFindHost, .networkConnectionLost, .notConnectedToInternet:
+                return "无法连接后端服务，请确认本地 Docker 后端已启动。"
+            default:
+                break
             }
         }
 
@@ -1176,6 +1231,8 @@ private struct CaptchaOverlayView: View {
     let challenge: CaptchaChallenge
     @Binding var sliderX: CGFloat
     let isVerifying: Bool
+    let isLoginSubmitting: Bool
+    let statusMessage: String?
     let errorMessage: String?
     let onClose: () -> Void
     let onReload: () -> Void
@@ -1192,11 +1249,20 @@ private struct CaptchaOverlayView: View {
         imageWidth - thumbSize
     }
 
+    private var isLocked: Bool {
+        isVerifying || isLoginSubmitting || statusMessage != nil
+    }
+
     var body: some View {
         ZStack {
             Color.black.opacity(0.52)
                 .ignoresSafeArea()
-                .onTapGesture(perform: onClose)
+                .onTapGesture {
+                    guard !isLocked else {
+                        return
+                    }
+                    onClose()
+                }
 
             VStack(alignment: .leading, spacing: Spacing.lg) {
                 HStack {
@@ -1213,6 +1279,8 @@ private struct CaptchaOverlayView: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(Color.white.opacity(0.72))
+                    .disabled(isLocked)
+                    .opacity(isLocked ? 0.35 : 1)
                     .accessibilityIdentifier("captcha.close")
                 }
 
@@ -1229,6 +1297,12 @@ private struct CaptchaOverlayView: View {
 
                 slider
 
+                if let statusMessage {
+                    Label(statusMessage, systemImage: "checkmark.circle.fill")
+                        .font(Typography.caption.weight(.semibold))
+                        .foregroundStyle(Color(red: 0.43, green: 0.86, blue: 1.0))
+                }
+
                 if let errorMessage {
                     Text(errorMessage)
                         .font(Typography.caption.weight(.semibold))
@@ -1241,7 +1315,7 @@ private struct CaptchaOverlayView: View {
                 }
                 .buttonStyle(.bordered)
                 .tint(Color(red: 0.43, green: 0.86, blue: 1.0))
-                .disabled(isVerifying)
+                .disabled(isLocked)
             }
             .padding(20)
             .frame(width: 342)
@@ -1267,7 +1341,7 @@ private struct CaptchaOverlayView: View {
                 .fill(Color(red: 0.20, green: 0.75, blue: 1.0).opacity(0.24))
                 .frame(width: sliderX + thumbSize / 2, height: 48)
 
-            Text(isVerifying ? "验证中..." : "向右拖动滑块完成验证")
+            Text(sliderInstruction)
                 .font(Typography.caption.weight(.semibold))
                 .foregroundStyle(Color.white.opacity(0.68))
                 .frame(width: imageWidth, height: 48)
@@ -1285,9 +1359,13 @@ private struct CaptchaOverlayView: View {
                 )
                 .frame(width: thumbSize, height: 48)
                 .overlay {
-                    if isVerifying {
+                    if isVerifying || isLoginSubmitting {
                         ProgressView()
                             .tint(.white)
+                    } else if statusMessage != nil {
+                        Image(systemName: "checkmark")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(.white)
                     } else {
                         Image(systemName: "arrow.right")
                             .font(.headline.weight(.semibold))
@@ -1298,7 +1376,7 @@ private struct CaptchaOverlayView: View {
                 .gesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
-                            guard !isVerifying else { return }
+                            guard !isLocked else { return }
                             if dragStartX == nil {
                                 dragStartX = sliderX
                             }
@@ -1306,7 +1384,7 @@ private struct CaptchaOverlayView: View {
                             sliderX = min(max(0, nextX), maxX)
                         }
                         .onEnded { _ in
-                            guard !isVerifying else { return }
+                            guard !isLocked else { return }
                             dragStartX = nil
                             guard sliderX >= minimumVerificationX else {
                                 sliderX = 0
@@ -1318,6 +1396,19 @@ private struct CaptchaOverlayView: View {
                 .accessibilityIdentifier("captcha.slider")
         }
         .frame(width: imageWidth, height: 48)
+    }
+
+    private var sliderInstruction: String {
+        if isLoginSubmitting {
+            return "正在登录..."
+        }
+        if isVerifying {
+            return "验证中..."
+        }
+        if let statusMessage {
+            return statusMessage
+        }
+        return "拖动滑块，让拼图对齐缺口"
     }
 }
 

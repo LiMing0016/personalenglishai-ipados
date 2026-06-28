@@ -6,6 +6,8 @@ enum AppTab: String, CaseIterable, Hashable, Identifiable {
     case writing
     case profile
 
+    static let primaryTabs: [AppTab] = [.assistant, .writing, .profile]
+
     var id: String { rawValue }
 
     var title: String {

@@ -7,6 +7,8 @@ struct ConversationListView: View {
     @State private var showingFolderEditor = false
     @State private var folderName = ""
     @State private var movingConversationID: AssistantConversation.ID?
+    @State private var renamingConversationID: AssistantConversation.ID?
+    @State private var conversationTitle = ""
 
     var body: some View {
         List {
@@ -65,6 +67,10 @@ struct ConversationListView: View {
                                 .tint(.orange)
                             }
                             .contextMenu {
+                                Button("重命名对话", systemImage: "pencil") {
+                                    conversationTitle = conversation.title
+                                    renamingConversationID = conversation.id
+                                }
                                 Button(conversation.pinned ? "取消置顶" : "置顶", systemImage: conversation.pinned ? "pin.slash" : "pin") {
                                     Task { await store.setPinned(conversationID: conversation.id, pinned: !conversation.pinned) }
                                 }
@@ -88,6 +94,28 @@ struct ConversationListView: View {
                             .accessibilityIdentifier("assistant.conversation.\(conversation.id)")
                     }
                 }
+            }
+        }
+        .alert("重命名对话", isPresented: Binding(
+            get: { renamingConversationID != nil },
+            set: {
+                if !$0 {
+                    renamingConversationID = nil
+                    conversationTitle = ""
+                }
+            }
+        )) {
+            TextField("对话标题", text: $conversationTitle)
+            Button("取消", role: .cancel) {
+                renamingConversationID = nil
+                conversationTitle = ""
+            }
+            Button("保存") {
+                if let renamingConversationID {
+                    Task { await store.renameConversation(id: renamingConversationID, title: conversationTitle) }
+                }
+                renamingConversationID = nil
+                conversationTitle = ""
             }
         }
         .navigationTitle("AI 助手")
@@ -131,6 +159,7 @@ struct ConversationListView: View {
         .task {
             selectedConversationID = await store.loadInitialSelection(currentSelection: selectedConversationID)
         }
+        .searchable(text: $store.conversationSearchQuery, prompt: "搜索对话、摘要或内容")
         .refreshable {
             await store.load()
         }

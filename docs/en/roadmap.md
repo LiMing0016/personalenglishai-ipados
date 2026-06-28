@@ -37,7 +37,7 @@ Scope:
 
 ## Phase 2: Learning Assistant MVP
 
-Status: planned.
+Status: in progress.
 
 Scope:
 
@@ -47,6 +47,8 @@ Scope:
 - send message
 - support non-streaming response first
 - add streaming response after the basic loop works
+- current focus: [AI Assistant P0 Stability Loop](./ai-assistant-p0)
+- P1 chat experience: [AI Assistant P1 Core Chat Experience](./ai-assistant-p1)
 
 ## Phase 3: Writing MVP
 
