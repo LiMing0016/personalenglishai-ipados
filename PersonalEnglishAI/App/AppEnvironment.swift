@@ -6,6 +6,7 @@ struct AppEnvironment: @unchecked Sendable {
     let authSession: AuthSession
     let apiClient: APIClient
     let authService: AuthService
+    let assistantService: AssistantService
     let userService: UserService
     let subscriptionService: SubscriptionService
     let authDeepLinkStore: AuthDeepLinkStore
@@ -15,6 +16,7 @@ struct AppEnvironment: @unchecked Sendable {
         authSession: AuthSession,
         apiClient: APIClient,
         authService: AuthService,
+        assistantService: AssistantService,
         userService: UserService,
         subscriptionService: SubscriptionService,
         authDeepLinkStore: AuthDeepLinkStore
@@ -23,6 +25,7 @@ struct AppEnvironment: @unchecked Sendable {
         self.authSession = authSession
         self.apiClient = apiClient
         self.authService = authService
+        self.assistantService = assistantService
         self.userService = userService
         self.subscriptionService = subscriptionService
         self.authDeepLinkStore = authDeepLinkStore
@@ -31,10 +34,13 @@ struct AppEnvironment: @unchecked Sendable {
 
 extension AppEnvironment {
     static let live: AppEnvironment = {
-        let authSession = AuthSession(tokenStore: KeychainTokenStore(service: "PersonalEnglishAI"))
+        let tokenStore = KeychainTokenStore(service: "PersonalEnglishAI")
+        let authSession = AuthSession(tokenStore: tokenStore)
         let authDeepLinkStore = AuthDeepLinkStore()
         var apiClient = APIClient(configuration: .development)
-        apiClient.tokenProvider = { authSession.accessToken }
+        apiClient.tokenProvider = {
+            try? tokenStore.readAccessToken()
+        }
         apiClient.tokenRefreshProvider = {
             let refreshService = LiveAuthService(apiClient: APIClient(configuration: .development))
             let response = try await refreshService.refresh()
@@ -43,11 +49,15 @@ extension AppEnvironment {
                 throw APIError.missingToken
             }
 
-            try authSession.updateAccessToken(token)
+            try await MainActor.run {
+                try authSession.updateAccessToken(token)
+            }
             return token
         }
         apiClient.unauthorizedHandler = {
-            authSession.clear()
+            await MainActor.run {
+                authSession.clear()
+            }
         }
 
         return AppEnvironment(
@@ -55,6 +65,7 @@ extension AppEnvironment {
             authSession: authSession,
             apiClient: apiClient,
             authService: LiveAuthService(apiClient: apiClient),
+            assistantService: LiveAssistantService(apiClient: apiClient),
             userService: LiveUserService(apiClient: apiClient),
             subscriptionService: LiveSubscriptionService(apiClient: apiClient),
             authDeepLinkStore: authDeepLinkStore
@@ -66,6 +77,7 @@ extension AppEnvironment {
         authSession: AuthSession(tokenStore: InMemoryTokenStore()),
         apiClient: APIClient(configuration: .preview),
         authService: MockAuthService(),
+        assistantService: MockAssistantService(),
         userService: MockUserService(),
         subscriptionService: MockSubscriptionService(),
         authDeepLinkStore: AuthDeepLinkStore()

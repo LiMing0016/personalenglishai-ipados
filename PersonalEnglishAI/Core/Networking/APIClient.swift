@@ -1,6 +1,6 @@
 import Foundation
 
-struct APIClient {
+struct APIClient: @unchecked Sendable {
     let configuration: AppConfiguration
     var urlSession: URLSession = .shared
     var tokenProvider: (() -> String?)?
@@ -49,7 +49,7 @@ struct APIClient {
             throw APIError.invalidURL
         }
 
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: url, timeoutInterval: configuration.requestTimeoutInterval)
         request.httpMethod = endpoint.method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
@@ -117,7 +117,27 @@ private struct AnyEncodable: Encodable {
 extension JSONDecoder {
     static var api: JSONDecoder {
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let value = try container.decode(String.self)
+
+            if let date = DateFormatters.iso8601WithFractionalSeconds.date(from: value) {
+                return date
+            }
+
+            if let date = DateFormatters.iso8601.date(from: value) {
+                return date
+            }
+
+            if let date = DateFormatters.localDateTime.date(from: value) {
+                return date
+            }
+
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Invalid date: \(value)"
+            )
+        }
         return decoder
     }
 }
@@ -128,4 +148,26 @@ extension JSONEncoder {
         encoder.dateEncodingStrategy = .iso8601
         return encoder
     }
+}
+
+private enum DateFormatters {
+    nonisolated(unsafe) static let iso8601WithFractionalSeconds: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    nonisolated(unsafe) static let iso8601: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
+    static let localDateTime: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        return formatter
+    }()
 }

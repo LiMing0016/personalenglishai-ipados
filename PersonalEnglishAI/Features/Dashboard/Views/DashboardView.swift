@@ -2,12 +2,16 @@ import SwiftUI
 
 struct DashboardView: View {
     private let quickActions = DashboardQuickAction.samples
+    var onSelectTab: (AppTab) -> Void = { _ in }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) {
                 HeaderSection()
-                QuickActionsSection(actions: quickActions)
+                QuickActionsSection(
+                    actions: quickActions,
+                    onSelectTab: onSelectTab
+                )
                 TodayFocusSection()
             }
             .padding(Spacing.lg)
@@ -32,12 +36,15 @@ private struct HeaderSection: View {
 
 private struct QuickActionsSection: View {
     let actions: [DashboardQuickAction]
+    let onSelectTab: (AppTab) -> Void
 
     var body: some View {
         Grid(alignment: .leading, horizontalSpacing: Spacing.md, verticalSpacing: Spacing.md) {
             GridRow {
                 ForEach(actions) { action in
-                    QuickActionTile(action: action)
+                    QuickActionTile(action: action) {
+                        onSelectTab(action.tab)
+                    }
                 }
             }
         }
@@ -46,21 +53,27 @@ private struct QuickActionsSection: View {
 
 private struct QuickActionTile: View {
     let action: DashboardQuickAction
+    let onTap: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            Image(systemName: action.systemImage)
-                .font(.title2)
-                .foregroundStyle(.tint)
-            Text(action.title)
-                .font(Typography.sectionTitle)
-            Text(action.subtitle)
-                .font(Typography.caption)
-                .foregroundStyle(.secondary)
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                Image(systemName: action.systemImage)
+                    .font(.title2)
+                    .foregroundStyle(.tint)
+                Text(action.title)
+                    .font(Typography.sectionTitle)
+                    .foregroundStyle(.primary)
+                Text(action.subtitle)
+                    .font(Typography.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(Spacing.md)
+            .frame(maxWidth: .infinity, minHeight: 132, alignment: .topLeading)
+            .background(Color.peaiSurface, in: RoundedRectangle(cornerRadius: 8))
         }
-        .padding(Spacing.md)
-        .frame(maxWidth: .infinity, minHeight: 132, alignment: .topLeading)
-        .background(Color.peaiSurface, in: RoundedRectangle(cornerRadius: 8))
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("dashboard.quickAction.\(action.id)")
     }
 }
 
@@ -98,25 +111,29 @@ private struct DashboardQuickAction: Identifiable {
     let title: String
     let subtitle: String
     let systemImage: String
+    let tab: AppTab
 
     static let samples = [
         DashboardQuickAction(
             id: "assistant",
             title: "问 AI 助手",
             subtitle: "练口语、讲语法、做翻译，也可以一起整理想法。",
-            systemImage: "bubble.left.and.bubble.right"
+            systemImage: "bubble.left.and.bubble.right",
+            tab: .assistant
         ),
         DashboardQuickAction(
             id: "writing",
             title: "写一篇作文",
             subtitle: "先完成草稿，后续接入 AI 评分与反馈。",
-            systemImage: "pencil.and.scribble"
+            systemImage: "pencil.and.scribble",
+            tab: .writing
         ),
         DashboardQuickAction(
             id: "profile",
             title: "查看学习档案",
             subtitle: "追踪能力变化、学习进度和账户状态。",
-            systemImage: "chart.line.uptrend.xyaxis"
+            systemImage: "chart.line.uptrend.xyaxis",
+            tab: .profile
         )
     ]
 }

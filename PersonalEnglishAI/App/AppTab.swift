@@ -1,10 +1,12 @@
 import Foundation
 
-enum AppTab: String, CaseIterable, Identifiable {
+enum AppTab: String, CaseIterable, Hashable, Identifiable {
     case dashboard
     case assistant
     case writing
     case profile
+
+    static let primaryTabs: [AppTab] = [.assistant, .writing, .profile]
 
     var id: String { rawValue }
 

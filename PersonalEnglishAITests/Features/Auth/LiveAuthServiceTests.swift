@@ -12,6 +12,7 @@ final class LiveAuthServiceTests: XCTestCase {
         MockURLProtocol.handler = { request in
             XCTAssertEqual(request.url?.path, "/api/v1/auth/login")
             XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertLessThanOrEqual(request.timeoutInterval, 15)
 
             let body = try XCTUnwrap(request.peaiBodyData)
             let payload = try JSONSerialization.jsonObject(with: body) as? [String: String]
